@@ -69,14 +69,18 @@ var Couch = {
           var require = function(name, module) {
             module = module || {};
             var newModule = resolveModule(name.split('/'), module, ddoc);
-            var s = "function (module, exports, require) { " + newModule.current + " }";
-            try {
-              var func = sandbox ? evalcx(s, sandbox) : eval(s);
-              func.apply(sandbox, [newModule, newModule.exports, function(name) {return require(name, newModule)}]);
-            } catch(e) { 
-              throw ["error","compilation_error","Module require('"+name+"') raised error "+e.toSource()]; 
-            }
-            return newModule.exports;
+            if (!newModule.current.compiled) {
+              var s = "function (module, exports, require) { " + newModule.current + " }";
+              try {
+                var func = sandbox ? evalcx(s, sandbox) : eval(s);
+                func.apply(sandbox, [newModule, newModule.exports, function(name) {return require(name, newModule)}]);
+              } catch(e) { 
+                throw ["error","compilation_error","Module require('"+name+"') raised error "+e.toSource()]; 
+              }
+              newModule.current.compiled = newModule.exports;
+            } 
+            return newModule.current.compiled;
+            // return newModule.exports;
           }
           sandbox.require = require;
         }
